@@ -1,0 +1,74 @@
+mql5
+//+------------------------------------------------------------------+
+//|                                     Bollinger Bands Filled.mq5   |
+//|                   Copyright 2021, forexroboteasy.com              |
+//|                        Forex Robot Easy Team                       |
+//+------------------------------------------------------------------+
+#property copyright 'Copyright 2021, forexroboteasy.com'
+#property link      'https://forexroboteasy.com'
+#property version   '1.00'
+#property description 'Bollinger Bands Filled Indicator'
+
+// Input parameters
+input int    Period       = 20;       // Period of the Bollinger Bands
+input double Deviation    = 2.0;      // Standard deviation multiplier
+input color  FillColor    = clrDodgerBlue; // Fill color for the indicator
+input bool   Transparent  = true;    // Enable transparency for the fill color
+input color  Background   = clrWhite; // Background color of the chart
+
+// Global variables
+double UpperBand[];
+double LowerBand[];
+int    bufferShift;
+
+// Initialization function
+int OnInit()
+{
+    // Set indicator buffers
+    SetIndexBuffer(0, UpperBand);
+    SetIndexBuffer(1, LowerBand);
+
+    // Set indicator label
+    string shortName = 'Bollinger Bands Filled';
+    IndicatorSetString(INDICATOR_SHORTNAME, shortName);
+
+    // Set chart properties
+    if (Transparent)
+        ChartSetInteger(0, CHART_COLOR_BACKGROUND, Background);
+
+    return INIT_SUCCEEDED;
+}
+
+// Calculation function
+int OnCalculate(const int rates_total, const int prev_calculated, const datetime &time[],
+                const double &open[], const double &high[], const double &low[], const double &close[],
+                const long &tick_volume[], const long &volume[], const int &spread[])
+{
+    // Calculate Bollinger Bands
+    int limit = rates_total - prev_calculated;
+    int i;
+
+    for (i = bufferShift; i < limit && !IsStopped(); i++)
+    {
+        double sum = 0.0;
+
+        for (int j = i - Period + 1; j <= i; j++)
+            sum += close[j];
+
+        double ma = sum / Period;
+
+        double deviation = 0.0;
+
+        for (int j = i - Period + 1; j <= i; j++)
+            deviation += MathPow(close[j] - ma, 2.0);
+
+        deviation = MathSqrt(deviation / Period);
+
+        UpperBand[i] = ma + Deviation * deviation;
+        LowerBand[i] = ma - Deviation * deviation;
+    }
+
+    bufferShift = i;
+
+    return rates_total;
+}
